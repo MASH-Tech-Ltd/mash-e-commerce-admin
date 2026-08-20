@@ -82,7 +82,7 @@ export default function DashboardOverview() {
     fetchDashboardData();
   }, []);
 
-  const storeUrl = `http://localhost:3000`;
+  const storeUrl = process.env.NEXT_PUBLIC_STORE_URL || `http://localhost:3000`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(storeUrl);
