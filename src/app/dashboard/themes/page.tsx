@@ -40,7 +40,7 @@ export default function ThemesPage() {
 
   const fetchTheme = async () => {
     try {
-      const res = await api.get('/themes/my-theme');
+      const res = await api.get('/themes/get-theme');
       const themeData = res.data.data;
       if (themeData) {
         if (themeData.themeId) setActiveTheme(themeData.themeId);
