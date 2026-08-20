@@ -123,7 +123,7 @@ export default function DashboardOverview() {
           <div className="flex items-center gap-3">
             <div className="bg-white border border-gray-200 rounded-xl px-4 py-2 flex items-center gap-3 shadow-sm">
               <span className="text-sm font-medium text-gray-600 truncate max-w-[200px]">
-                localhost:3000
+                {storeUrl.replace(/^https?:\/\//, '')}
               </span>
               <div className="w-px h-4 bg-gray-200"></div>
               <button onClick={copyToClipboard} className="text-gray-400 hover:text-indigo-600 transition-colors" title="Copy URL">
