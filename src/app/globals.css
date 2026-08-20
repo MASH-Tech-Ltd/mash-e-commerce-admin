@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --font-sans: var(--font-inter);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  
+  /* Variables for login page */
+  --text-primary: 0, 0%, 10%;
+  --text-secondary: 0, 0%, 40%;
+  --accent-primary: 257, 70%, 45%; /* #5022C3 - Purple */
+  --accent-hover: 257, 70%, 35%;
+  --radius-md: 0.5rem;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-xl border border-gray-200/50 shadow-xl rounded-2xl;
+  }
+}
+
+@layer components {
+  .input-field {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-[var(--radius-md)] bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--accent-primary))] transition-all;
+  }
+  
+  .btn-primary {
+    @apply bg-[hsl(var(--accent-primary))] hover:bg-[hsl(var(--accent-hover))] text-white font-medium py-2 px-4 rounded-[var(--radius-md)] transition-colors flex items-center justify-center;
+  }
+}
+
+@layer base {
+  input, textarea, select {
+    color: #000000 !important;
+  }
+}
