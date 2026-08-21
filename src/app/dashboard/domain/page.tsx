@@ -25,7 +25,7 @@ export default function DomainManagementPage() {
 
   const fetchStoreInfo = async () => {
     try {
-      const res = await api.get("/tenants/my-store");
+      const res = await api.get("/store/my-store");
       if (res.data?.data) {
         setStore(res.data.data);
         setCustomDomain(res.data.data.customDomain || "");
@@ -47,7 +47,7 @@ export default function DomainManagementPage() {
       const formData = new FormData();
       formData.append("customDomain", customDomain);
 
-      await api.patch("/tenants/update-store", formData, {
+      await api.patch("/store/update-store", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success("Domain updated successfully");

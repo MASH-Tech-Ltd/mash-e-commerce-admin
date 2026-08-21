@@ -78,7 +78,7 @@ export default function ProfilePage() {
 
     const fetchStoreSettings = async () => {
       try {
-        const res = await api.get('/tenants/my-store');
+        const res = await api.get('/store/my-store');
         const data = res.data?.data;
         if (data) {
           if (data.settings?.checkoutNote) {
@@ -161,7 +161,7 @@ export default function ProfilePage() {
         api.put('/users/me', data, {
           headers: { 'Content-Type': 'multipart/form-data' },
         }),
-        api.patch('/tenants/update-store', storeData, {
+        api.patch('/store/update-store', storeData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       ]);

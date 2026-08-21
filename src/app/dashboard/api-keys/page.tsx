@@ -26,7 +26,7 @@ export default function ApiKeysPage() {
 
   const fetchStoreInfo = async () => {
     try {
-      const res = await api.get('/tenants/my-store');
+      const res = await api.get('/store/my-store');
       if (res.data?.data) {
         setStore(res.data.data);
         const settings = res.data.data.settings || {};
@@ -51,7 +51,7 @@ export default function ApiKeysPage() {
       formData.append('settings.stripePublishableKey', stripePublishableKey);
       formData.append('settings.stripeSecretKey', stripeSecretKey);
       
-      await api.patch('/tenants/update-store', formData, {
+      await api.patch('/store/update-store', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('API Keys updated successfully');
