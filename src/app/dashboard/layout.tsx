@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ShoppingBag, Package, ListTree, Users, Truck,
   Store, BarChart2, Palette, Paintbrush, LayoutTemplate, Smartphone, 
   Star, Tag, BadgeCheck, RefreshCw, Boxes, UserCog, CreditCard,
-  GraduationCap, ShieldCheck, Handshake, ChevronRight, Globe, Key, LifeBuoy
+  GraduationCap, ShieldCheck, Handshake, ChevronRight, Globe, Key, LifeBuoy, Menu, X
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { api } from '@/utils/api';
@@ -30,6 +30,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [merchantUser, setMerchantUser] = useState<any>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 
 
@@ -96,9 +97,18 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 font-sans overflow-hidden">
+      
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-[260px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden">
-        <div className="h-16 flex items-center px-6 border-b border-gray-100 flex-shrink-0">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[260px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col h-full overflow-hidden transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-lg overflow-hidden">
               <img src="/MEasy.png" alt="MashEasy" className="w-full h-full object-contain" />
@@ -110,6 +120,12 @@ export default function DashboardLayout({
               <span className="text-xs font-medium text-gray-500">Admin Hub</span>
             </div>
           </div>
+          <button 
+            className="md:hidden text-gray-500 hover:text-gray-900"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
           {navGroups.map((group, idx) => (
@@ -129,6 +145,7 @@ export default function DashboardLayout({
                     <Link
                       key={item.name}
                       href={item.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors group ${
                         isActive 
                           ? 'bg-purple-50 text-[#5022C3] font-medium' 
@@ -150,29 +167,37 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FAFBFF]">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
-          <div className="flex flex-col justify-center">
-             <h2 className="text-lg font-bold text-gray-900">
-               {pathname === '/dashboard/orders' ? 'Orders Management' : 
-                pathname === '/dashboard/products' ? 'Products Management' : 
-                pathname === '/dashboard/categories' ? 'Categories Management' : 
-                pathname === '/dashboard/customers' ? 'Customers Management' : 
-                'Dashboard'}
-             </h2>
-             {pathname !== '/dashboard' && (
-               <p className="text-xs text-gray-500">
-                 {pathname === '/dashboard/orders' ? 'View and process customer orders' : 
-                  pathname === '/dashboard/products' ? "Manage your store's inventory" : 
-                  pathname === '/dashboard/categories' ? 'Organize your products into categories' : 
-                  pathname === '/dashboard/customers' ? 'Manage your customer relationships' : 
-                  pathname === '/dashboard/courier-automation' ? 'Automate courier integration and shipments' : 
-                  pathname === '/dashboard/fraud-check' ? 'Monitor orders for fraud detection' : 
-                  ''}
-               </p>
-             )}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FAFBFF] w-full md:w-auto">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button 
+              className="md:hidden text-gray-500 hover:text-gray-900 focus:outline-none"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col justify-center">
+               <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                 {pathname === '/dashboard/orders' ? 'Orders Management' : 
+                  pathname === '/dashboard/products' ? 'Products Management' : 
+                  pathname === '/dashboard/categories' ? 'Categories Management' : 
+                  pathname === '/dashboard/customers' ? 'Customers Management' : 
+                  'Dashboard'}
+               </h2>
+               {pathname !== '/dashboard' && (
+                 <p className="text-xs text-gray-500 hidden sm:block">
+                   {pathname === '/dashboard/orders' ? 'View and process customer orders' : 
+                    pathname === '/dashboard/products' ? "Manage your store's inventory" : 
+                    pathname === '/dashboard/categories' ? 'Organize your products into categories' : 
+                    pathname === '/dashboard/customers' ? 'Manage your customer relationships' : 
+                    pathname === '/dashboard/courier-automation' ? 'Automate courier integration and shipments' : 
+                    pathname === '/dashboard/fraud-check' ? 'Monitor orders for fraud detection' : 
+                    ''}
+                 </p>
+               )}
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell userId={merchantUser?._id} />
             {merchantUser && (
               <div className="flex items-center gap-3">

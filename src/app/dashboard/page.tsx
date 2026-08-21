@@ -110,7 +110,7 @@ export default function DashboardOverview() {
 
   return (
     <div className="relative min-h-full pb-20 bg-[#F8FAFC]">
-      <div className="w-full max-w-[1800px] mx-auto pt-8 px-6">
+      <div className="w-full max-w-[1800px] mx-auto pt-6 md:pt-8 px-4 md:px-6">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -121,15 +121,15 @@ export default function DashboardOverview() {
           
           {/* Quick Actions / Store Link */}
           <div className="flex items-center gap-3">
-            <div className="bg-white border border-gray-200 rounded-xl px-4 py-2 flex items-center gap-3 shadow-sm">
-              <span className="text-sm font-medium text-gray-600 truncate max-w-[200px]">
+            <div className="bg-white border border-gray-200 rounded-xl px-4 py-2 flex items-center gap-3 shadow-sm max-w-full overflow-hidden">
+              <span className="text-sm font-medium text-gray-600 truncate">
                 {storeUrl.replace(/^https?:\/\//, '')}
               </span>
-              <div className="w-px h-4 bg-gray-200"></div>
-              <button onClick={copyToClipboard} className="text-gray-400 hover:text-indigo-600 transition-colors" title="Copy URL">
+              <div className="w-px h-4 bg-gray-200 shrink-0"></div>
+              <button onClick={copyToClipboard} className="text-gray-400 hover:text-indigo-600 transition-colors shrink-0" title="Copy URL">
                 <Copy className="w-4 h-4" />
               </button>
-              <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-600 transition-colors" title="Visit Store">
+              <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-600 transition-colors shrink-0" title="Visit Store">
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
@@ -137,14 +137,14 @@ export default function DashboardOverview() {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 mb-8">
           {loading ? (
              Array(4).fill(0).map((_, idx) => (
                 <div key={idx} className="bg-white/50 animate-pulse rounded-2xl p-6 border border-gray-100 h-[140px]"></div>
              ))
           ) : (
             metrics.map((metric, idx) => (
-              <div key={idx} className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+              <div key={idx} className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300">
                 <div className="flex justify-between items-start mb-4">
                   <div className={`p-3 rounded-xl ${metric.bg}`}>
                     <metric.icon className={`w-5 h-5 ${metric.color}`} />
@@ -168,7 +168,7 @@ export default function DashboardOverview() {
           <div className="lg:col-span-2 flex flex-col gap-8">
             {/* Recent Orders Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
-            <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white/50 backdrop-blur-md">
+            <div className="p-4 sm:p-6 border-b border-gray-50 flex justify-between items-center bg-white/50 backdrop-blur-md">
               <h2 className="text-lg font-bold text-gray-900">Recent Orders</h2>
               <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">View All</button>
             </div>
@@ -223,7 +223,7 @@ export default function DashboardOverview() {
 
           <div className="flex flex-col gap-6">
             {/* Best Selling Products */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
               <h2 className="text-sm font-bold text-gray-900 mb-5 uppercase tracking-wider flex items-center gap-2">
                  <Star className="w-4 h-4 text-yellow-500" /> Best Selling Products
               </h2>
@@ -259,7 +259,7 @@ export default function DashboardOverview() {
             </div>
 
             {/* Store Overview Data */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                <h2 className="text-sm font-bold text-gray-900 mb-5 uppercase tracking-wider flex items-center gap-2">
                  <Store className="w-4 h-4 text-indigo-500" /> Store Overview
                </h2>

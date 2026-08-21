@@ -54,7 +54,7 @@ export default function CustomersPage() {
     <div className="w-full h-full font-sans flex flex-col">
       <div className="bg-white border-t border-gray-200 flex-1 flex flex-col min-h-0">
         {/* Filters Bar */}
-        <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#fcfcfc] shrink-0">
+        <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#fcfcfc] shrink-0">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
@@ -74,8 +74,8 @@ export default function CustomersPage() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto flex-1">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto flex-1 custom-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
                 <th className="px-6 py-4 font-semibold">Customer Name</th>
