@@ -3,18 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -36,9 +35,10 @@ export default function LoginPage() {
       
       sessionStorage.setItem('merchantToken', data.data.accessToken);
       sessionStorage.setItem('merchantUser', JSON.stringify(data.data.user));
+      toast.success('Login successful!');
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -57,12 +57,6 @@ export default function LoginPage() {
           <h2 className="text-3xl font-bold mb-2 bg-gradient-to-br from-[hsl(var(--text-primary))] to-[hsl(var(--text-secondary))] bg-clip-text text-transparent">Welcome MASH E-Commerce</h2>
           <p className="text-[hsl(var(--text-secondary))] text-[0.95rem]">Sign in to your Admin Dashboard</p>
         </div>
-        
-        {error && (
-          <div className="bg-[hsla(0,80%,50%,0.1)] text-[hsl(0,80%,50%)] p-3 rounded-[var(--radius-md)] text-sm mb-6 border border-[hsla(0,80%,50%,0.2)] text-center">
-            {error}
-          </div>
-        )}
         
         <form onSubmit={handleLogin} className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">

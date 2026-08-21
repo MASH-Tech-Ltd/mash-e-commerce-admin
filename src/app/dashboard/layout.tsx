@@ -253,7 +253,7 @@ export default function DashboardLayout({
         </div>
       </main>
       
-      <Toaster position="top-right" />
+
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
