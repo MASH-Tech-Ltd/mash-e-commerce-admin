@@ -4,6 +4,60 @@ import { Bell, Check } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+
+let audioCtx: AudioContext | null = null;
+
+const initAudio = () => {
+  try {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  } catch (e) {
+    console.warn('AudioContext init failed', e);
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('click', initAudio, { once: true });
+  window.addEventListener('keydown', initAudio, { once: true });
+}
+
+const playNotificationSound = () => {
+  try {
+    if (!audioCtx) initAudio();
+    if (!audioCtx) return;
+    
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+    oscillator.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.1); // C6
+    
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+    
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {
+    console.log('Audio playback failed', e);
+  }
+};
 
 export default function NotificationBell({ userId }: { userId?: string }) {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -30,7 +84,8 @@ export default function NotificationBell({ userId }: { userId?: string }) {
   useEffect(() => {
     if (!userId) return;
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || apiUrl.replace('/api/v1', '');
     const newSocket = io(socketUrl);
     setSocket(newSocket);
 
@@ -40,6 +95,19 @@ export default function NotificationBell({ userId }: { userId?: string }) {
 
     newSocket.on('new_notification', (notification) => {
       setNotifications(prev => [notification, ...prev]);
+      playNotificationSound();
+      toast.success(`New Notification: ${notification.title}`, {
+        icon: '🔔',
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      });
+      // Dispatch a custom event so other components (like OrdersPage) can react to it
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('new_notification_received', { detail: notification }));
+      }
     });
 
     return () => {

@@ -18,81 +18,79 @@ export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [merchantUser, setMerchantUser] = useState<any>(null);
+  const getCachedUser = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('merchantUser');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
+  };
 
-  // Form State
+  const cachedUser = getCachedUser();
+  let extraDetails: any = {};
+  if (cachedUser?.details && cachedUser.details.startsWith('{')) {
+    try {
+      extraDetails = JSON.parse(cachedUser.details);
+    } catch(e) {}
+  }
+
+  const [merchantUser, setMerchantUser] = useState<any>(cachedUser);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(cachedUser?.avatar?.secure_url || null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [checkoutNote, setCheckoutNote] = useState('');
   const [storeLogo, setStoreLogo] = useState<File | null>(null);
-  const [storeLogoPreview, setStoreLogoPreview] = useState<string>('');
+  const [storeLogoPreview, setStoreLogoPreview] = useState<string | null>(null);
+  const [checkoutNote, setCheckoutNote] = useState<string>(extraDetails.checkoutNote || '');
   const storeLogoInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    details: '',
-    storeName: '',
-    taxId: '',
-    supportEmail: '',
-    supportPhone: '',
-    warrantyPeriod: '1 Year',
-    returnPolicy: '14 Days',
+    name: cachedUser?.name || '',
+    email: cachedUser?.email || '',
+    phone: cachedUser?.phone || '',
+    address: cachedUser?.address || '',
+    details: cachedUser?.details && !cachedUser.details.startsWith('{') ? cachedUser.details : extraDetails.details || '',
+    storeName: extraDetails.storeName || cachedUser?.name || '',
+    taxId: extraDetails.taxId || '',
+    supportEmail: extraDetails.supportEmail || cachedUser?.email || '',
+    supportPhone: extraDetails.supportPhone || cachedUser?.phone || '',
+    warrantyPeriod: extraDetails.warrantyPeriod || '1 Year',
+    returnPolicy: extraDetails.returnPolicy || '14 Days',
   });
 
   useEffect(() => {
-    try {
-      const storedUser = sessionStorage.getItem('merchantUser');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        setMerchantUser(user);
-        
-        let extraDetails = {};
-        try {
-          if (user.details && user.details.startsWith('{')) {
-            extraDetails = JSON.parse(user.details);
-          }
-        } catch(e) {}
-
-        setFormData({
-          name: user.name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-          address: user.address || '',
-          details: user.details && !user.details.startsWith('{') ? user.details : (extraDetails as any).details || '',
-          storeName: (extraDetails as any).storeName || user.name || '',
-          taxId: (extraDetails as any).taxId || '',
-          supportEmail: (extraDetails as any).supportEmail || user.email || '',
-          supportPhone: (extraDetails as any).supportPhone || user.phone || '',
-          warrantyPeriod: (extraDetails as any).warrantyPeriod || '1 Year',
-          returnPolicy: (extraDetails as any).returnPolicy || '14 Days',
-        });
-        if (user.avatar?.secure_url) {
-          setPreviewUrl(user.avatar.secure_url);
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse merchant user', e);
-    }
-
-    const fetchStoreSettings = async () => {
+    const fetchFreshProfile = async () => {
       try {
-        const res = await api.get('/store/my-store');
-        const data = res.data?.data;
-        if (data) {
-          if (data.settings?.checkoutNote) {
-            setCheckoutNote(data.settings.checkoutNote);
+        const res = await api.get('/users/me');
+        if (res.data?.data) {
+          const user = res.data.data;
+          sessionStorage.setItem('merchantUser', JSON.stringify(user));
+          setMerchantUser(user);
+          let extra = {};
+          if (user.details && user.details.startsWith('{')) {
+            try { extra = JSON.parse(user.details); } catch(e) {}
           }
-          if (data.logo) {
-            setStoreLogoPreview(data.logo);
+          setFormData({
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            address: user.address || '',
+            details: user.details && !user.details.startsWith('{') ? user.details : (extra as any).details || '',
+            storeName: (extra as any).storeName || user.name || '',
+            taxId: (extra as any).taxId || '',
+            supportEmail: (extra as any).supportEmail || user.email || '',
+            supportPhone: (extra as any).supportPhone || user.phone || '',
+            warrantyPeriod: (extra as any).warrantyPeriod || '1 Year',
+            returnPolicy: (extra as any).returnPolicy || '14 Days',
+          });
+          setCheckoutNote((extra as any).checkoutNote || '');
+          if (user.avatar?.secure_url && !imageFile) {
+            setPreviewUrl(user.avatar.secure_url);
           }
         }
-      } catch (err) {
-        console.error('Failed to fetch store settings', err);
-      }
+      } catch (e) {}
     };
-    fetchStoreSettings();
+    fetchFreshProfile();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -106,7 +104,7 @@ export default function ProfilePage() {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     } else {
-      setPreviewUrl(merchantUser?.avatar?.secure_url || null);
+      setPreviewUrl(null);
     }
   };
 
@@ -138,6 +136,7 @@ export default function ProfilePage() {
         supportPhone: formData.supportPhone,
         warrantyPeriod: formData.warrantyPeriod,
         returnPolicy: formData.returnPolicy,
+        checkoutNote: checkoutNote,
       });
 
       data.append('name', formData.name);
@@ -148,23 +147,13 @@ export default function ProfilePage() {
       
       if (imageFile) {
         data.append('avatar', imageFile);
+      } else if (previewUrl === null) {
+        data.append('removeAvatar', 'true');
       }
 
-      const storeData = new FormData();
-      storeData.append('name', formData.storeName);
-      storeData.append('checkoutNote', checkoutNote);
-      if (storeLogo) {
-        storeData.append('logo', storeLogo);
-      }
-
-      const [userResponse, storeResponse] = await Promise.all([
-        api.put('/users/me', data, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }),
-        api.patch('/store/update-store', storeData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-      ]);
+      const userResponse = await api.put('/users/me', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
       if (userResponse.data?.data) {
         sessionStorage.setItem('merchantUser', JSON.stringify(userResponse.data.data));
@@ -194,7 +183,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="p-6 w-full max-w-[1800px] mx-auto min-h-screen">
+    <div className="p-6 w-full max-w-[1800px] mx-auto min-h-screen" suppressHydrationWarning>
       
       {/* Header Section */}
       <div className="relative mb-10 overflow-hidden rounded-2xl bg-gradient-to-r from-[#1E1B4B] via-[#312E81] to-[#1E1B4B] shadow-xl">

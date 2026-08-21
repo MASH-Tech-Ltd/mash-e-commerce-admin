@@ -24,54 +24,92 @@ export default function DashboardOverview() {
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
   useEffect(() => {
+    // 1. Instantly load cached data if available (Optimistic UI)
+    const cachedData = localStorage.getItem('dashboardCache');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        if (parsed.metrics) {
+          // Restore the React component reference for icons which is lost during JSON stringify
+          setMetrics(parsed.metrics.map((m: any, idx: number) => ({ ...m, icon: baseMetrics[idx].icon })));
+        }
+        if (parsed.recentOrders) setRecentOrders(parsed.recentOrders);
+        if (parsed.productStats) setProductStats(parsed.productStats);
+        if (parsed.categoryStats) setCategoryStats(parsed.categoryStats);
+        if (parsed.topProducts) setTopProducts(parsed.topProducts);
+        setLoading(false); // Disable loading state so we don't show skeleton
+      } catch (e) {
+        console.error("Failed to parse dashboard cache", e);
+      }
+    }
+
+    // 2. Fetch fresh data in the background
     const fetchDashboardData = async () => {
       try {
-        setLoading(true);
+        if (!cachedData) setLoading(true);
 
         // Fetch Stats
         const statsRes = await api.get('/analytics/dashboard-stats', { params: { days: 7 } });
         const stats = statsRes.data?.data || {};
 
-        setMetrics([
+        const newMetrics = [
           { ...baseMetrics[0], value: `${(stats.totalRevenue || 0).toLocaleString()} BDT`, change: "+14.5%", isPositive: true },
           { ...baseMetrics[1], value: stats.totalOrders || 0, change: "+5.2%", isPositive: true },
           { ...baseMetrics[2], value: stats.totalCustomers || 0, change: "-1.1%", isPositive: false },
           { ...baseMetrics[3], value: `${stats.conversionRate || 0}%`, change: "+0.8%", isPositive: true },
-        ]);
+        ];
+        setMetrics(newMetrics);
 
         // Fetch Orders
         const ordersRes = await api.get('/orders/get-paginated-orders', { params: { page: 1, limit: 5 } });
-        setRecentOrders(ordersRes.data?.data || []);
+        const newRecentOrders = ordersRes.data?.data || [];
+        setRecentOrders(newRecentOrders);
 
         // Fetch Products and Categories Stats
+        let newProductStats = { total: 0, active: 0, inactive: 0 };
+        let newCategoryStats = { total: 0, active: 0, inactive: 0 };
+        let newTopProducts: any[] = [];
+
         try {
           // Get Top Products & Total Products
           const prodsRes = await api.get('/products/get-all-product', { params: { limit: 4, sortBy: 'salesCount', sortOrder: 'desc' } });
           const totalProds = prodsRes.data?.meta?.total || 0;
-          setTopProducts(prodsRes.data?.data || []);
+          newTopProducts = prodsRes.data?.data || [];
+          setTopProducts(newTopProducts);
 
           // Try to get inactive/draft products to calculate active
           const draftProdsRes = await api.get('/products/get-all-product', { params: { limit: 1, status: 'DRAFT' } });
           const draftProds = draftProdsRes.data?.meta?.total || 0;
 
-          setProductStats({
+          newProductStats = {
             total: totalProds,
             active: totalProds - draftProds,
             inactive: draftProds
-          });
+          };
+          setProductStats(newProductStats);
 
           // Fetch Categories
           const catRes = await api.get('/categories/get-all-category', { params: { limit: 1000 } });
           const allCats = catRes.data?.data || [];
-          setCategoryStats({
+          newCategoryStats = {
              total: allCats.length,
              active: allCats.filter((c: any) => c.status !== 'INACTIVE').length,
              inactive: allCats.filter((c: any) => c.status === 'INACTIVE').length,
-          });
+          };
+          setCategoryStats(newCategoryStats);
 
         } catch (e) {
           console.error("Failed to fetch store overview stats", e);
         }
+
+        // 3. Save fresh data to cache for next load
+        localStorage.setItem('dashboardCache', JSON.stringify({
+          metrics: newMetrics,
+          recentOrders: newRecentOrders,
+          productStats: newProductStats,
+          categoryStats: newCategoryStats,
+          topProducts: newTopProducts
+        }));
 
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);

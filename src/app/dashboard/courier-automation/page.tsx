@@ -23,7 +23,7 @@ export default function CourierAutomation() {
       try {
         // Here we could get existing credentials if we had an endpoint that returns them unencrypted for the merchant.
         // For security, usually you don't return the secret. But we can fetch the general settings.
-        const res = await api.get('/courier/my-charges');
+        const res = await api.get('/courier/get-charges');
         if (res.data?.success && res.data.data) {
           const data = res.data.data;
           if (data.provider) setActiveProvider(data.provider);

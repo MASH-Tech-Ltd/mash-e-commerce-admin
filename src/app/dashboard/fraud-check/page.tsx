@@ -12,7 +12,7 @@ export default function FraudCheckHistory() {
   const fetchChecks = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/fraud/merchant');
+      const res = await api.get('/fraud/all');
       if (res.data?.success) {
         setChecks(res.data.data);
       }

@@ -91,9 +91,23 @@ export default function DashboardLayout({
       title: 'Settings',
       items: [
         { name: 'Profile', path: '/dashboard/profile', icon: UserCog },
+        { name: 'Security', path: '/dashboard/security', icon: Key },
       ]
     }
   ];
+
+  // Compute dynamic store name from merchant details
+  let dynamicStoreName = process.env.NEXT_PUBLIC_PLATFORM_NAME || 'Platform';
+  if (merchantUser?.details) {
+    try {
+      const detailsObj = merchantUser.details.startsWith('{') 
+        ? JSON.parse(merchantUser.details) 
+        : { details: merchantUser.details };
+      if (detailsObj.storeName) {
+        dynamicStoreName = detailsObj.storeName;
+      }
+    } catch (e) {}
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 font-sans overflow-hidden">
@@ -115,7 +129,7 @@ export default function DashboardLayout({
             </div>
             <div className="flex flex-col">
               <h1 className="text-base font-bold text-gray-900 tracking-tight leading-tight">
-                {process.env.NEXT_PUBLIC_PLATFORM_NAME || 'Platform'}
+                {dynamicStoreName}
               </h1>
               <span className="text-xs font-medium text-gray-500">Admin Hub</span>
             </div>
@@ -182,6 +196,7 @@ export default function DashboardLayout({
                   pathname === '/dashboard/products' ? 'Products Management' : 
                   pathname === '/dashboard/categories' ? 'Categories Management' : 
                   pathname === '/dashboard/customers' ? 'Customers Management' : 
+                  pathname === '/dashboard/themes' ? 'Store Theme & Settings' : 
                   'Dashboard'}
                </h2>
                {pathname !== '/dashboard' && (
@@ -190,6 +205,7 @@ export default function DashboardLayout({
                     pathname === '/dashboard/products' ? "Manage your store's inventory" : 
                     pathname === '/dashboard/categories' ? 'Organize your products into categories' : 
                     pathname === '/dashboard/customers' ? 'Manage your customer relationships' : 
+                    pathname === '/dashboard/themes' ? 'Customize the look, feel, and details of your storefront' : 
                     pathname === '/dashboard/courier-automation' ? 'Automate courier integration and shipments' : 
                     pathname === '/dashboard/fraud-check' ? 'Monitor orders for fraud detection' : 
                     ''}
@@ -205,9 +221,17 @@ export default function DashboardLayout({
                   <div className="font-medium text-gray-900">{merchantUser.name || 'Merchant'}</div>
                   <div className="text-xs text-gray-500">{merchantUser.email}</div>
                 </div>
-                <div className="w-9 h-9 rounded-full bg-purple-100 text-[#5022C3] flex items-center justify-center font-bold">
-                  {(merchantUser.name || merchantUser.email || 'M').charAt(0).toUpperCase()}
-                </div>
+                {merchantUser.avatar?.secure_url ? (
+                  <img 
+                    src={merchantUser.avatar.secure_url} 
+                    alt="Profile" 
+                    className="w-9 h-9 rounded-full object-cover border border-purple-200"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-purple-100 text-[#5022C3] flex items-center justify-center font-bold">
+                    {(merchantUser.name || merchantUser.email || 'M').charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
             )}
             <button 

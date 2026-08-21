@@ -83,6 +83,8 @@ export default function EditCategoryPage({ params }: { params: Promise<{ id: str
       
       if (imageFile) {
         data.append('image', imageFile);
+      } else if (previewUrl === null) {
+        data.append('removeImage', 'true');
       }
 
       await api.patch(`/categories/update-category/${resolvedParams.id}`, data, {

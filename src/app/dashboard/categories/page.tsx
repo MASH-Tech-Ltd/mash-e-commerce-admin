@@ -18,8 +18,27 @@ interface Category {
 }
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const CACHE_KEY = 'dashboard_categories_cache';
+  
+  const getCachedData = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [];
+  };
+
+  const [categories, setCategories] = useState<Category[]>(getCachedData);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (localStorage.getItem(CACHE_KEY)) return false;
+      } catch (e) {}
+    }
+    return true;
+  });
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -38,14 +57,19 @@ export default function CategoriesPage() {
   }, [page, search]);
 
   const fetchCategories = async () => {
-    setLoading(true);
+    if (categories.length === 0) setLoading(true);
     try {
       const response = await api.get('/categories/get-all-category', {
         params: { page, limit, search }
       });
-      setCategories(response.data.data || []);
+      const fetchedData = response.data.data || [];
+      setCategories(fetchedData);
       setTotalPages(response.data.meta?.totalPages || 1);
       setTotalRecords(response.data.meta?.total || 0);
+
+      if (page === 1 && !search) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(fetchedData));
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Failed to load categories');
@@ -69,7 +93,7 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="w-full h-full font-sans flex flex-col">
+    <div className="w-full h-full font-sans flex flex-col" suppressHydrationWarning>
       <div className="bg-white border-t border-gray-200 flex-1 flex flex-col min-h-0">
         {/* Filters Bar */}
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#fcfcfc] shrink-0">
@@ -109,12 +133,16 @@ export default function CategoriesPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-20 text-gray-500">
-                    <div className="w-8 h-8 border-4 border-purple-200 border-t-[#5022C3] rounded-full animate-spin mx-auto mb-4"></div>
-                    Loading categories...
-                  </td>
-                </tr>
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-6 py-4"><div className="w-12 h-12 bg-gray-200 rounded-lg"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded-full w-16"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-1/2"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
+                    <td className="px-6 py-4"><div className="h-8 bg-gray-200 rounded-lg w-24 mx-auto"></div></td>
+                  </tr>
+                ))
               ) : categories.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-20">

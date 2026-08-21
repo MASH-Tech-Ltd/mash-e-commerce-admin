@@ -19,11 +19,31 @@ interface Product {
   createdAt: string;
   salesCount?: number;
   stock?: number;
+  variants?: any[];
 }
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const CACHE_KEY = 'dashboard_products_cache';
+  
+  const getCachedData = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [];
+  };
+
+  const [products, setProducts] = useState<Product[]>(getCachedData);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (localStorage.getItem(CACHE_KEY)) return false;
+      } catch (e) {}
+    }
+    return true;
+  });
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -53,19 +73,26 @@ export default function ProductsPage() {
   // Modals
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
 
+
+
   useEffect(() => {
     fetchProducts();
   }, [page, search, categoryId, sortBy, sortOrder]);
 
   const fetchProducts = async () => {
-    setLoading(true);
+    if (products.length === 0) setLoading(true);
     try {
       const response = await api.get('/products/get-all-product', {
         params: { page, limit, search, categoryId, sortBy, sortOrder }
       });
-      setProducts(response.data.data || []);
+      const fetchedData = response.data.data || [];
+      setProducts(fetchedData);
       setTotalPages(response.data.meta?.totalPages || 1);
       setTotalRecords(response.data.meta?.total || 0);
+
+      if (page === 1 && !search && categoryId === 'all' && !sortBy && !sortOrder) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(fetchedData));
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to load products');
@@ -97,7 +124,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="w-full h-full font-sans flex flex-col">
+    <div className="w-full h-full font-sans flex flex-col" suppressHydrationWarning>
       <div className="bg-white border-t border-gray-200 flex-1 flex flex-col min-h-0">
         {/* Filters Bar */}
         <div className="p-4 border-b border-gray-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-[#fcfcfc] shrink-0">
@@ -161,15 +188,30 @@ export default function ProductsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-20 text-gray-500">
-                    <div className="w-8 h-8 border-4 border-purple-200 border-t-[#5022C3] rounded-full animate-spin mx-auto mb-4"></div>
-                    Loading products...
-                  </td>
-                </tr>
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg shrink-0"></div>
+                        <div className="h-4 bg-gray-200 rounded w-40"></div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4"><div className="h-6 bg-gray-200 rounded-md w-24"></div></td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-12"></div>
+                    </td>
+                    <td className="px-6 py-4"><div className="h-6 bg-gray-200 rounded-full w-20"></div></td>
+                    <td className="px-6 py-4"><div className="h-8 bg-gray-200 rounded-lg w-24 mx-auto"></div></td>
+                  </tr>
+                ))
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-20">
+                  <td colSpan={6} className="text-center py-20">
                     <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center text-[#5022C3] mb-4 mx-auto">
                       <Package className="w-8 h-8" />
                     </div>
@@ -203,10 +245,19 @@ export default function ProductsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900 text-sm">৳{product.discountedPrice?.toFixed(2)}</div>
-                      {product.originalPrice > product.discountedPrice && (
-                        <div className="text-xs text-gray-400 line-through mt-0.5">৳{product.originalPrice?.toFixed(2)}</div>
-                      )}
+                      {(() => {
+                        const hasVariants = product.variants && product.variants.length > 0;
+                        const originalPrice = hasVariants ? Number(product.variants![0].originalPrice) : product.originalPrice;
+                        const discountedPrice = hasVariants ? Number(product.variants![0].discountedPrice) : product.discountedPrice;
+                        return (
+                          <>
+                            <div className="font-bold text-gray-900 text-sm">৳{(discountedPrice || 0).toFixed(2)}</div>
+                            {originalPrice > discountedPrice && (
+                              <div className="text-xs text-gray-400 line-through mt-0.5">৳{(originalPrice || 0).toFixed(2)}</div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4">
                       {getStatusBadge(product.status || 'ACTIVE')}

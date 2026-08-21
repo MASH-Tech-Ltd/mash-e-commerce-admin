@@ -6,6 +6,8 @@ import { TrendingUp, Users, ShoppingBag, DollarSign } from 'lucide-react';
 import { api } from '@/utils/api';
 
 export default function AnalyticsPage() {
+  const CACHE_KEY = 'dashboard_analytics_cache';
+  
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState(7);
   const [stats, setStats] = useState({
@@ -17,23 +19,36 @@ export default function AnalyticsPage() {
   });
 
   useEffect(() => {
-    fetchStats();
+    let hasCache = false;
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        setStats(JSON.parse(cached));
+        setLoading(false);
+        hasCache = true;
+      }
+    } catch (e) {}
+    fetchStats(hasCache);
   }, [timeframe]);
 
-  const fetchStats = async () => {
-    setLoading(true);
+  const fetchStats = async (hasCache: boolean = false) => {
+    if (!hasCache) setLoading(true);
     try {
       const response = await api.get('/analytics/dashboard-stats', {
         params: { days: timeframe }
       });
       if (response.data?.data) {
-        setStats({
+        const newData = {
           totalRevenue: response.data.data.totalRevenue || 0,
           totalOrders: response.data.data.totalOrders || 0,
           totalCustomers: response.data.data.totalCustomers || 0,
           conversionRate: response.data.data.conversionRate || 3.2,
           chartData: response.data.data.chartData || []
-        });
+        };
+        setStats(newData);
+        if (timeframe === 7) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(newData));
+        }
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -43,7 +58,7 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="p-6 w-full max-w-[1800px] mx-auto">
+    <div className="p-6 w-full max-w-[1800px] mx-auto" suppressHydrationWarning>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>

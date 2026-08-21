@@ -5,6 +5,7 @@ import { Search, MoreVertical, ShoppingBag, Eye, Edit, Trash2, X, ChevronLeft, C
 import { api } from '@/utils/api';
 import { toast } from 'react-hot-toast';
 import { EditOrderModal } from './EditOrderModal';
+import { io } from 'socket.io-client';
 
 interface OrderItem {
   productId: string;
@@ -30,8 +31,27 @@ interface Order {
 }
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const CACHE_KEY = 'dashboard_orders_cache';
+  
+  const getCachedData = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [];
+  };
+
+  const [orders, setOrders] = useState<Order[]>(getCachedData);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (localStorage.getItem(CACHE_KEY)) return false;
+      } catch (e) {}
+    }
+    return true;
+  });
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -42,6 +62,7 @@ export default function OrdersPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [refreshFlag, setRefreshFlag] = useState(0);
 
   // Modals
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
@@ -66,19 +87,45 @@ export default function OrdersPage() {
     } catch (e) {}
   }, []);
 
+
+
   useEffect(() => {
     fetchOrders();
-  }, [page, statusFilter, search]);
+  }, [page, statusFilter, search, refreshFlag]);
+
+  useEffect(() => {
+    const handleNewNotification = () => {
+      // Trigger order fetch when a notification (e.g. new order) is received
+      setRefreshFlag(prev => prev + 1);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('new_notification_received', handleNewNotification);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('new_notification_received', handleNewNotification);
+      }
+    };
+  }, []);
 
   const fetchOrders = async () => {
-    setLoading(true);
+    // Only show loading if we don't have any orders displayed yet
+    if (orders.length === 0) setLoading(true);
     try {
       const response = await api.get('/orders/get-paginated-orders', {
         params: { page, limit, status: statusFilter, search }
       });
-      setOrders(response.data.data || []);
+      const fetchedOrders = response.data.data || [];
+      setOrders(fetchedOrders);
       setTotalPages(response.data.meta?.totalPages || 1);
       setTotalRecords(response.data.meta?.total || 0);
+      
+      // Cache the first page of default results
+      if (page === 1 && statusFilter === 'all' && !search) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(fetchedOrders));
+      }
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -137,7 +184,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="w-full h-full font-sans flex flex-col">
+    <div className="w-full h-full font-sans flex flex-col" suppressHydrationWarning>
       <div className="bg-white border-t border-gray-200 flex-1 flex flex-col min-h-0">
         {/* Filters Bar */}
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#fcfcfc] shrink-0">
@@ -184,12 +231,17 @@ export default function OrdersPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-20 text-gray-500">
-                    <div className="w-8 h-8 border-4 border-purple-200 border-t-[#5022C3] rounded-full animate-spin mx-auto mb-4"></div>
-                    Loading orders...
-                  </td>
-                </tr>
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded-full w-24"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded-full w-24"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
+                    <td className="px-6 py-4"><div className="h-8 bg-gray-200 rounded-lg w-24 mx-auto"></div></td>
+                  </tr>
+                ))
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-20">
